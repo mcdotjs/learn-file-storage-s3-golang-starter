@@ -1,13 +1,18 @@
 package main
 
 import (
+	"bytes"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/google/uuid"
 )
+
+type D interface {
+	Write(p []byte) (n int, err error)
+}
 
 func (cfg apiConfig) ensureAssetsDir() error {
 	if _, err := os.Stat(cfg.assetsRoot); os.IsNotExist(err) {
@@ -17,9 +22,27 @@ func (cfg apiConfig) ensureAssetsDir() error {
 }
 
 // maybe refactor with this functions
-func getAssetPath(videoID uuid.UUID, mediaType string) string {
+func getAssetPath(mediaType string) string {
 	ext := mediaTypeToExt(mediaType)
-	return fmt.Sprintf("%s%s", videoID, ext)
+	key := make([]byte, 32)
+	rand.Read(key)
+
+	dest := bytes.NewBuffer(make([]byte, 0))
+	encoder := base64.NewEncoder(base64.RawURLEncoding, dest)
+	encoder.Write(key)
+	encoder.Close()
+
+	//return dest.String() + ext
+	return fmt.Sprintf("%s%s", dest.String(), ext)
+	//NOTE: ORRRRRRR
+	// base := make([]byte, 32)
+	// 	_, err := rand.Read(base)
+	// 	if err != nil {
+	// 		panic("failed to generate random bytes")
+	// 	}
+	// 	id := base64.RawURLEncoding.EncodeToString(base)
+	// 	ext := mediaTypeToExt(mediaType)
+	// 	return fmt.Sprintf("%s%s", id, ext)
 }
 
 func (cfg apiConfig) getAssetDiskPath(assetPath string) string {
